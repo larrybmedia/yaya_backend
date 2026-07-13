@@ -37,46 +37,50 @@ def log_action(admin_user, action_type, details):
 
 @admin_bp.route("/server-verification", methods=["GET", "POST"])
 def server_verification():
-    if request.method == "POST":
-        key = request.form.get("verification_key")
 
-        if key == os.getenv("SERVER_VERIFICATION_KEY"):
+    if request.method == "POST":
+        server_key = request.form.get("server_key")
+
+        if server_key == current_app.config["SERVER_VERIFICATION_KEY"]:
             session["server_verified"] = True
             return redirect(url_for("admin.login"))
 
-        flash("Invalid Server Verification Key", "danger")
+        flash("Invalid server verification key.", "danger")
 
     return render_template("server_verification.html")
 
 @admin_bp.route('/admin/login', methods=['GET', 'POST'])
 def login():
-    # 1. Gatekeeper: Ensure verification first
-    if not session.get('is_verified'):
-        return redirect(url_for('admin.server_verification'))
+    # Require server verification first
+    if not session.get("server_verified"):
+      return redirect(url_for("admin.server_verification"))
 
-    # 2. If already logged in, redirect them to their dashboard
+    # Already logged in
     if current_user.is_authenticated:
         flash("You are already logged in.", "info")
-        return redirect(url_for('admin.superadmin_dashboard') if current_user.role == 'superadmin' else url_for('admin.dashboard'))
+        if current_user.role == "superadmin":
+            return redirect(url_for("admin.superadmin_dashboard"))
+        return redirect(url_for("admin.dashboard"))
 
-    # 3. Handle login attempt
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        portal = request.form.get('portal_type')
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        portal = request.form.get("portal_type")
 
-        user = User.query.filter_by(username=username).first()
+        # Look in the Admin table
+        admin = Admin.query.filter_by(username=username).first()
 
-        if user and user.check_password(password):
-            login_user(user)
-            # Route based on the portal they selected and their role
-            if portal == 'superadmin' and user.role == 'superadmin':
-                return redirect(url_for('admin.superadmin_dashboard'))
-            return redirect(url_for('admin.dashboard'))
+        if admin and check_password_hash(admin.password_hash, password):
+            login_user(admin)
+
+            if admin.role == "superadmin":
+                return redirect(url_for("admin.superadmin_dashboard"))
+
+            return redirect(url_for("admin.dashboard"))
 
         flash("Invalid username or password.", "danger")
 
-    return render_template('admin_login.html')
+    return render_template("admin_login.html")
 
 @admin_bp.route('/super-admin-dashboard')
 @login_required
