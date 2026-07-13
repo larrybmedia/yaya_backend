@@ -77,6 +77,10 @@ def inject_branches():
         "branches": Branch.query.order_by(Branch.name).all()
     }
 
+@app.route("/favicon.ico")
+def favicon():
+    return redirect(url_for("static", filename="images/rccg_yaya.png"))
+
 # =========================================================
 # DATABASE & SERVICE STORAGE CONFIGURATIONS
 # =========================================================

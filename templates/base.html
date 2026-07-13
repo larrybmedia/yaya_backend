@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCCG YAYA | Portal</title>
 
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/rccg_yaya.png') }}">
-
+    <link rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='images/rccg_yaya.png') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -39,15 +40,15 @@
             color: #333;
         }
 
-        {% if request.endpoint == 'main.index' %}
-        .main-container {
+        .home-page {
             background:
-                linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-                url('{{ url_for("static", filename="images/rccg_ycc.jpg") }}') !important;
-            color: #fff !important;
+                linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)),
+                url('{{ url_for("static", filename="images/rccg_ycc.jpg") }}')
+                no-repeat center center;
+            background-size: cover;
+            min-height: 100vh;
+            color: #fff;
         }
-        {% endif %}
-
         .navbar {
             background: rgba(255,255,255,0.98);
             border-bottom: 4px solid var(--primary-blue);
@@ -76,7 +77,14 @@
             RCCG YAYA
         </a>
 
-        <div class="collapse navbar-collapse">
+        <button class="navbar-toggler"
+                type="button"
+                data-toggle="collapse"
+                data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
 
             <ul class="navbar-nav mx-auto">
 
