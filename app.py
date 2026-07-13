@@ -150,8 +150,8 @@ migrate.init_app(app, db)
 jwt.init_app(app)
 
 # Executed immediately on engine compilation for container workers
-with app.app_context():
-    create_superadmin()
+# with app.app_context():
+#     create_superadmin()
 
 # =========================================================
 # LOGIN MANAGER
