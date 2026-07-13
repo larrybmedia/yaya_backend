@@ -116,7 +116,8 @@ def create_superadmin():
     password = SUPER_ADMIN_PASSWORD or "SuperAdmin@2026"
 
     admin = Admin.query.filter_by(username=username).first()
-    if not admin:
+
+    if admin is None:
         admin = Admin(
             username=username,
             password_hash=generate_password_hash(password),
@@ -124,7 +125,9 @@ def create_superadmin():
         )
         db.session.add(admin)
         db.session.commit()
-        print(f"Superadmin '{username}' initialized successfully.")
+        print(f"✓ Super Admin '{username}' created.")
+    else:
+        print(f"✓ Super Admin '{username}' already exists.")
 
 def reset_superadmin():
     username = SUPER_ADMIN_USERNAME or "superadmin"
@@ -153,9 +156,15 @@ login_manager.init_app(app)
 migrate.init_app(app, db)
 jwt.init_app(app)
 
-# Executed immediately on engine compilation for container workers
-# with app.app_context():
-#     create_superadmin()
+# Executed immediately on startup
+with app.app_context():
+    db.create_all()
+
+    try:
+        create_superadmin()
+        print("✓ Super Admin verified.")
+    except Exception as e:
+        print(f"Super Admin initialization failed: {e}")
 
 # =========================================================
 # LOGIN MANAGER

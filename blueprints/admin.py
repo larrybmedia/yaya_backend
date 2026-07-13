@@ -35,16 +35,18 @@ def log_action(admin_user, action_type, details):
     db.session.commit()
 # --- ROUTES ---
 
-@admin_bp.route('/server-verification', methods=['GET', 'POST'])
+@admin_bp.route("/server-verification", methods=["GET", "POST"])
 def server_verification():
-    if request.method == 'POST':
-        if request.form.get('server_key') == "MASTER_KEY_2026":
-            session['is_verified'] = True  # This unlocks the Gatekeeper
-            return redirect(url_for('admin.login'))
-        else:
-            flash("Invalid Master Key", "danger")
+    if request.method == "POST":
+        key = request.form.get("verification_key")
 
-    return render_template('server_verification.html')
+        if key == os.getenv("SERVER_VERIFICATION_KEY"):
+            session["server_verified"] = True
+            return redirect(url_for("admin.login"))
+
+        flash("Invalid Server Verification Key", "danger")
+
+    return render_template("server_verification.html")
 
 @admin_bp.route('/admin/login', methods=['GET', 'POST'])
 def login():
