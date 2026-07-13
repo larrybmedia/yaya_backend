@@ -376,7 +376,6 @@ def edit_manual(id):
 
     return render_template('edit_manual.html', form=form, manual=manual)
 
-
 @main.route('/manual/delete/<int:id>', methods=['POST', 'GET'])
 @login_required
 @role_required('superadmin')
@@ -706,6 +705,10 @@ def forgot_password():
         flash("Password reset instructions have been sent if the account exists.", "info")
         return redirect(url_for('main.login'))
     return render_template('forgot_password.html')
+
+@main.route("/news")
+def news():
+    return render_template("news.html")
 
 
 @main.route('/super-admin/logs')
