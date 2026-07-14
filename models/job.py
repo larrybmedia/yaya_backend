@@ -16,7 +16,7 @@ class Job(db.Model):
 
     # NEW (production control)
     is_approved = db.Column(db.Boolean, default=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('admin.id'))
+    created_by = db.Column(db.Integer, db.ForeignKey('admins.id'))
 
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, onupdate=db.func.current_timestamp())
