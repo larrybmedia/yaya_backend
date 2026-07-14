@@ -172,7 +172,12 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(Admin, int(user_id))
+
+    admin = Admin.query.get(int(user_id))
+    if admin:
+        return admin
+
+    return User.query.get(int(user_id))
 
 # =========================================================
 # REGISTER BLUEPRINTS

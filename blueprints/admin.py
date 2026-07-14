@@ -1,3 +1,4 @@
+import email
 import os
 from flask_mail import Message
 
@@ -11,6 +12,7 @@ from functools import wraps
 from datetime import datetime
 from extensions import db, mail
 from decorators import role_required
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
@@ -49,36 +51,35 @@ def server_verification():
 
     return render_template("server_verification.html")
 
-@admin_bp.route('/admin/login', methods=['GET', 'POST'])
+@admin_bp.route("/login", methods=["GET", "POST"])
 def login():
-    # Require server verification first
-    if not session.get("server_verified"):
-      return redirect(url_for("admin.server_verification"))
 
-    # Already logged in
+    if not session.get("server_verified"):
+        return redirect(url_for("admin.server_verification"))
+
     if current_user.is_authenticated:
-        flash("You are already logged in.", "info")
         if current_user.role == "superadmin":
             return redirect(url_for("admin.superadmin_dashboard"))
         return redirect(url_for("admin.dashboard"))
 
     if request.method == "POST":
+
         username = request.form.get("username")
         password = request.form.get("password")
-        portal = request.form.get("portal_type")
 
-        # Look in the Admin table
         admin = Admin.query.filter_by(username=username).first()
 
-        if admin and check_password_hash(admin.password_hash, password):
+        if admin and admin.check_password(password):
             login_user(admin)
+            return redirect(url_for("admin.superadmin_dashboard"))
 
-            if admin.role == "superadmin":
-                return redirect(url_for("admin.superadmin_dashboard"))
+        user = User.query.filter_by(username=username).first()
 
+        if user and user.check_password(password):
+            login_user(user)
             return redirect(url_for("admin.dashboard"))
 
-        flash("Invalid username or password.", "danger")
+        flash("Invalid username or password", "danger")
 
     return render_template("admin_login.html")
 
@@ -105,13 +106,13 @@ def superadmin_dashboard():
                            manuals=Manual.query.all(),
                            manuals_count=Manual.query.count(),
                            logs_count=Log.query.count(),
-                           admins=User.query.filter(User.role.in_(['admin', 'superadmin'])).all(),
+                           admins=Admin.query.order_by(Admin.username).all(),
                            all_testimonies=all_testimonies,
                            pending_testimonies=pending_testimonies,
                            all_announcements=all_announcements, # New variable added
                            member_stats=member_stats)
 
-@admin_bp.route('/admin/dashboard')
+@admin_bp.route('/dashboard')
 @login_required
 def dashboard():
     if current_user.role == 'superadmin':
@@ -128,18 +129,24 @@ def dashboard():
         parish=current_parish
     )
 
-@admin_bp.route('/admin/signup', methods=['GET', 'POST'])
+@admin_bp.route('/signup', methods=['GET', 'POST'])
 def admin_signup():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        if User.query.filter_by(username=username).first():
+        if Admin.query.filter_by(username=username).first():
             flash("Username already exists!", "danger")
             return redirect(url_for('admin.admin_signup'))
 
-        new_user = User(username=username, role='admin')
+        new_user = User(
+            username=username,
+            email=email,
+            role="admin"
+        )
+
         new_user.set_password(password)
+
         db.session.add(new_user)
         db.session.commit()
 
@@ -150,13 +157,13 @@ def admin_signup():
 
 # --- MANAGEMENT ACTIONS ---
 
-@admin_bp.route('/admin/events')
+@admin_bp.route('/events')
 @login_required
 def events():
     events_list = Event.query.filter_by(branch_id=current_user.branch_id).all()
     return render_template('admin/events.html', events=events_list)
 
-@admin_bp.route('/admin/events/add', methods=['POST'])
+@admin_bp.route('/events/add', methods=['POST'])
 @login_required
 def add_event():
     new_event = Event(
@@ -169,7 +176,7 @@ def add_event():
     flash('Event scheduled successfully!', 'success')
     return redirect(url_for('admin.events'))
 
-@admin_bp.route('/admin/members')
+@admin_bp.route('/members')
 @login_required
 def members():
     query = request.args.get('search')
@@ -178,7 +185,7 @@ def members():
         members_query = members_query.filter(Member.full_name.ilike(f'%{query}%'))
     return render_template('admin/members.html', members=members_query.all())
 
-@admin_bp.route('/admin/members/add', methods=['POST'])
+@admin_bp.route('/members/add', methods=['POST'])
 @login_required
 def add_member():
     new_member = Member(
@@ -275,11 +282,11 @@ def delete_testimony(id):
     flash("Testimony deleted successfully.", "success")
     return redirect(url_for('admin.superadmin_dashboard'))
 
-@admin_bp.route('/admin/logout')
+@admin_bp.route('/logout')
 def logout():
-    session.pop('is_verified', None)
+    session.pop("server_verified", None)
     logout_user()
-    return redirect(url_for('main.index'))
+    return redirect(url_for("main.index"))
 
 @admin_bp.route('/create-branch', methods=['GET', 'POST'])
 @login_required
